@@ -8,11 +8,14 @@ class Numimg:
         self.Array = []
         for i in temp:
             self.Array.append(i.split(" ")[1:]) #because
+        self.rows = len(self.Array)
+        self.cols = len(self.Array[0])
         self.density = self.density()
-        self.h_symetry = self.__h_symetry__()
-        self.v_symetry = self.__v_symetry__()
-        self.min_h_intercepts, self.max_h_intercepts =__h_intercepts__()
-        self.min_v_intercepts, self.max_v_intercepts =__v_intercepts__()
+        self.h_symetry = self.__h_symmetry__()
+        self.v_symetry = self.__v_symmetry__()
+        self.min_h_intercepts, self.max_h_intercepts = self.__h_intercepts__()
+        self.min_v_intercepts, self.max_v_intercepts = self.__v_intercepts__()
+
     def print(self):
         print(self.label, ":")
         for i in self.Array:
@@ -27,6 +30,14 @@ class Numimg:
                 total += 1
 
         return counter/(self.rows * self.cols)
+
+    def __h_symmetry__(self):
+        temp = 0
+        for i in range(self.rows):
+            for j in range(self.cols):
+                if(self.Array[i][j] != self.Array[i][self.cols-(i+1)]):
+                    temp += 1
+        return temp
 
 
 
