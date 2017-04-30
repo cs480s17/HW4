@@ -17,6 +17,16 @@ class Numimg:
         print(self.label, ":")
         for i in self.Array:
             print(i)
+    def density(self):
+        counter = 0
+        total = 0
+        for i in self.Array:
+            for j in i:
+                if(j == '1'):
+                    counter += 1
+                total += 1
+
+        return counter/(self.rows * self.cols)
 
 
 
