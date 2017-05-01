@@ -33,9 +33,10 @@ class Numimg:
             self.Array.append(i.split(" ")[1:]) #because
         self.rows = len(self.Array)
         self.cols = len(self.Array[0])
-        self.density = self.density()
-        self.h_symmetry = self.__h_symmetry__()
-        self.v_symmetry = self.__v_symmetry__()
+        num_ones = self.num_ones()
+        self.density = num_ones / (self.rows * self.cols)
+        self.h_symmetry = self.__h_symmetry__() / num_ones
+        self.v_symmetry = self.__v_symmetry__() / num_ones
         self.min_h_intercepts, self.max_h_intercepts = self.__h_intercepts__()
         self.min_v_intercepts, self.max_v_intercepts = self.__v_intercepts__()
 
@@ -49,14 +50,14 @@ class Numimg:
         for i in self.Array:
             print(i)
 
-    def density(self):
+    def num_ones(self):
         counter = 0
         for i in self.Array:
             for j in i:
                 if(j == '1'):
                     counter += 1
 
-        return counter/(self.rows * self.cols)
+        return counter
 
     def __h_symmetry__(self):
         temp = 0
