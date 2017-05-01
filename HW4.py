@@ -1,5 +1,6 @@
 
 Data = []
+import sys
 
 class Numimg:
     def __init__(self, data = ""):
@@ -13,14 +14,16 @@ class Numimg:
         self.density = self.density()
         self.h_symmetry = self.__h_symmetry__()
         self.v_symmetry = self.__v_symmetry__()
-        #self.min_h_intercepts, self.max_h_intercepts = self.__h_intercepts__()
-        #self.min_v_intercepts, self.max_v_intercepts = self.__v_intercepts__()
+        self.min_h_intercepts, self.max_h_intercepts = self.__h_intercepts__()
+        self.min_v_intercepts, self.max_v_intercepts = self.__v_intercepts__()
 
     def print(self):
-        print("Label: ", self.label)
-        print("density: ", self.density)
-        print("h_symmetry: ", self.h_symmetry)
-        print("v_symmetry: ", self.v_symmetry)
+        print("Label:", self.label)
+        print("density:", self.density)
+        print("h_symmetry:", self.h_symmetry)
+        print("v_symmetry:", self.v_symmetry)
+        print("h intercepts(min,max):", self.min_h_intercepts, self.max_h_intercepts)
+        print("v intercepts(min,max):", self.min_v_intercepts, self.max_v_intercepts)
         for i in self.Array:
             print(i)
 
@@ -48,6 +51,43 @@ class Numimg:
                 if(self.Array[i][j] != self.Array[self.rows-(i+1)][j]):
                     temp += 1
         return temp
+
+    def __h_intercepts__(self):
+        min = sys.maxsize
+        max = 0
+        for i in range(self.rows):
+            count = 0
+            prev = '0'
+            for j in range(self.cols): #following will count the number of 1 to 0 borders in current row
+                curr = self.Array[i][j]
+                if prev != curr:
+                    if prev == '1':
+                        count += 1
+                    prev = curr
+            if count < min:
+                min = count
+            if count > max:
+                max = count
+        return min, max
+
+    def __v_intercepts__(self):
+        min = sys.maxsize
+        max = 0
+        for i in range(self.cols):
+            count = 0
+            prev = '0'
+            for j in range(self.rows): #following will count the number of 1 to 0 borders in current col
+                curr = self.Array[j][i]
+                if prev != curr:
+                    if prev == '1':
+                        count += 1
+                    prev = curr
+            if count < min:
+                min = count
+            if count > max:
+                max = count
+        return min, max
+
 
 
 
