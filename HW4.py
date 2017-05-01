@@ -1,6 +1,28 @@
 
 Data = []
 import sys
+import copy
+
+class Perceptron:
+    def __init__(self, num_inputs, Eta):
+        self.weights = [0]*(num_inputs+1) #+1 is for W0, the threshold weight
+        self.eta = Eta
+
+    def copy(self):
+        return copy.deepcopy(self)
+
+    def learn(self, inputs, correct_output):
+        prediction = self.predict(inputs)
+        if prediction*correct_output < 0: #if prediction and the correct output have a different sign:
+            for i in range(len(self.weights)):
+                self.weights[i] = self.weights[i] - (self.eta * (correct_output - prediction) * inputs[i])
+
+    def predict(self, inputs):
+        total = 0
+        for i in range(len(self.weights)):
+            total += self.weights[i] * inputs[i]
+        return total
+
 
 class Numimg:
     def __init__(self, data = ""):
