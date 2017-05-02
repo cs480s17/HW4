@@ -202,6 +202,7 @@ def main():
     BestP.listWeights()
     print()
     print("This results in", BestError, "Errors out of", len(Data) - TrainingSize, "Test Cases")
+    print("Which is an accuracy of", round(1 - (BestError/(len(Data) - TrainingSize)), 2))
     return 0
 
 
