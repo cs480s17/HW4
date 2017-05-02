@@ -2,26 +2,44 @@
 Data = []
 import sys
 import copy
+Epochs = 100
+TrainingPortion = 0.9
 
 class Perceptron:
     def __init__(self, num_inputs, Eta):
-        self.weights = [0]*(num_inputs+1) #+1 is for W0, the threshold weight
+        self.weights = [1]*(num_inputs+1) #+1 is for W0, the threshold weight
         self.eta = Eta
 
     def copy(self):
-        return copy.deepcopy(self)
+        p = Perceptron(len(self.weights)-1,  self.eta)
+        for i in range(len(self.weights)):
+            p.weights[i] = self.weights[i]
+        return p
 
     def learn(self, inputs, correct_output):
         prediction = self.predict(inputs)
-        if prediction*correct_output < 0: #if prediction and the correct output have a different sign:
+        if prediction * correct_output <= 0: #if prediction and the correct output have a different sign:
             for i in range(len(self.weights)):
-                self.weights[i] = self.weights[i] - (self.eta * (correct_output - prediction) * inputs[i])
+                new = self.weights[i] - (self.eta * (prediction - correct_output) * inputs[i])
+                self.weights[i] = new
+        else:
+            return
+
+    def test(self, inputs, correct_output):
+        prediction = self.predict(inputs)
+        return not(prediction * correct_output <= 0)  # if prediction and the correct output have a different sign, return false
 
     def predict(self, inputs):
         total = 0
         for i in range(len(self.weights)):
             total += self.weights[i] * inputs[i]
         return total
+
+    def listWeights(self):
+        for i in range(len(self.weights)):
+            sys.stdout.write("w" + str(i) + " = " + str(self.weights[i]) + " ")
+        sys.stdout.flush()
+        return
 
 
 class Numimg:
@@ -111,6 +129,17 @@ class Numimg:
                 max = count
         return min, max
 
+    def inputs(self):
+        return [-1,
+                self.density,
+                self.h_symmetry,
+                self.v_symmetry,
+                self.min_h_intercepts,
+                self.max_h_intercepts,
+                self.min_v_intercepts,
+                self.max_v_intercepts]
+
+
 
 
 
@@ -119,7 +148,7 @@ def parseData():
     global cols, rows
 
     print("Opening Test Data File")
-    f = open('Smalltest.txt', 'r')
+    f = open('testdata', 'r')
     print("Reading File to String")
     tempdata = f.read()
     print("Splitting into Samples")
@@ -134,8 +163,45 @@ def printData():
         i.print()
 
 def main():
+    global Epochs
+    global TrainingPortion
+    global Data
+    ErrorArray = []
+    PArray = []
     parseData()
-    printData()
+    TrainingSize = int(len(Data) * TrainingPortion)
+    BestP = None
+    BestError = sys.maxsize
+    CurrP = Perceptron(7, 0.05)
+    CurrError = 0
+    for i in range(TrainingSize, len(Data)):
+        correct_out = (-1 if Data[i].label == '5' else 1)
+        if not (CurrP.test(Data[i].inputs(), correct_out)):
+            CurrError += 1
+    ErrorArray.append(CurrError)
+    PArray.append(CurrP.copy())
+    if CurrError < BestError:
+        BestError = CurrError
+        BestP = CurrP.copy()
+    for e in range(Epochs):
+        CurrError = 0
+        for i in range(TrainingSize):
+            correct_out = (-1 if Data[i].label == '5' else 1)
+            CurrP.learn(Data[i].inputs(), correct_out)
+
+        for i in range(TrainingSize, len(Data)):
+            correct_out = (-1 if Data[i].label == '5' else 1)
+            if not(CurrP.test(Data[i].inputs(), correct_out)):
+                CurrError += 1
+        ErrorArray.append(CurrError)
+        PArray.append(CurrP.copy())
+        if CurrError < BestError:
+            BestError = CurrError
+            BestP = CurrP.copy()
+    print("The best perceptron of", Epochs, "epochs has the following weights, where w0 is the threshold")
+    BestP.listWeights()
+    print()
+    print("This results in", BestError, "Errors out of", len(Data) - TrainingSize, "Test Cases")
     return 0
 
 
