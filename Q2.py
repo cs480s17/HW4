@@ -119,6 +119,7 @@ def getChildren(B):
                 child.move = move
                 child.parent = B
                 children.append(child)
+    #random.shuffle(children)
     return children
 
 class board:
@@ -137,9 +138,10 @@ class board:
     def toStringBoard(self):
         global FileString
         for r in self.b:
-            for i in r:
-                FileString += str(i) + " "
-            FileString += "\n"
+            FileString += (' '.join(map(str, r))) + '\n'
+            #for i in r:
+            #    FileString += str(i) + " "
+            #FileString += "\n"
 
     def ClearBoard(self):
         blank = [[0, 0, 0, 0],[0, 0, 0, 0],[0, 0, 0, 0],[0, 0, 0, 0]]
@@ -297,11 +299,11 @@ def main():
 
     for i in range(1):
         print("Generating Board")
-        B.GenRandomBoard(7)
+        B.GenRandomBoard(8)
         print("running minMax(B)")
         minMax(B)
     print("writing to file")
-    out.write(FileString)
+    OutputFile.write(FileString)
     return
     #string = input("Please input your board below, as a 4x4 matrix of 2's, 1's, and 0's: \nInput should be of form:\n1 2 0 0\n1 0 2 0\n2 0 0 1\n2 0 0 1\n")
     #b = string.split()
