@@ -105,6 +105,7 @@ def minMax(B):
         return (val, B)
 
 def getChildren(B):
+    global p1_stats, p2_stats
     children = []
     if B.move == 1:
         move = 2
@@ -121,8 +122,26 @@ def getChildren(B):
                 child.move = move
                 child.parent = B
                 children.append(child)
-    #random.shuffle(children)
+    if(p1_stats == []):
+        random.shuffle(children)
+    else:
+        if (B.move == 1):
+            sortExpanded(children, p1_stats)
+        else:
+            sortExpanded(children, p2_stats)
     return children
+
+def sortExpanded(children, stats):
+    childs = []
+    for i in range(len(children)):
+        prob = calculateProbability(children[i], stats)
+        childs.append([copy.deepcopy(children[i]), prob])
+    childs.sort(key=lambda x: x[1])
+    for c in childs:
+        children[i] = c[0]
+    return children
+
+
 
 class board:
 
