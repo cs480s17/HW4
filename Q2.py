@@ -4,9 +4,11 @@ import sys
 
 FileString = ""
 NodesExplored = 0
-OutputFile = open("output.txt", 'a')
-DataSet = open("input.txt", 'r')
-StatsOutput = open("stats.txt", 'w')
+OutputFile = open("boards.txt", 'a')
+DataSet = open("boards.txt", 'r')
+StatsOutput = None
+StatsRead = open("stats.txt", 'r')
+
 
 wins = [[[1, 1], [2, 2], [3, 3], [4, 4]],
         [[1, 1], [2, 2], [3, 4], [4, 3]],
@@ -141,8 +143,6 @@ def sortExpanded(children, stats):
         children[i] = c[0]
     return children
 
-
-
 class board:
 
     def __init__(self, b):
@@ -267,6 +267,7 @@ class board:
         if cat == True:
             self.h = None
 
+
 def stringBoardAndOutcome(B, Outcome):
     global FileString
     global NodesExplored
@@ -295,11 +296,19 @@ def NextMove(node):
     else:
         NextMove(node.parent)
 
+def calculateProbability(board, stats):
+    for value in range(3):
+        pass
+
 def InputParse():
     global DataSet
+    print("Reading data file to string")
     string = DataSet.read()
+    print("Parsing string to list")
     b = string.split('#\n')[:-1]
     for i in range(len(b)):
+        if i%100000 == 0:
+            print("We have parced", i, "boards")
         b[i] = b[i].split('\n~')
         b[i][0] = b[i][0].split('\n')
         b[i][1] = float(b[i][1])
@@ -307,8 +316,6 @@ def InputParse():
             b[i][0][j] = b[i][0][j].split()
             b[i][0][j] = list(map(int, b[i][0][j]))
     return b
-
-
 
 def genStats(dataset):
     num_checked = 0
@@ -323,67 +330,55 @@ def genStats(dataset):
     count_given_p2_win = [[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
                           [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
                           [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]] #Zeros
-
-    for b in dataset:
+    print("Gathering cell counts")
+    for b in range(len(dataset)):
+        if b%100000 == 0:
+            print("Processed", b, "boards")
         num_checked += 1
-        if b[1] == 0.0:
+        if dataset[b][1] == 0.0:
             num_p2_wins += 1
             for i in range(4):
                 for j in range(4):
-                    count_given_p2_win[b[0][i][j]][i][j] += 1 #totally readable
-                    count[b[0][i][j]][i][j] += 1 #totally readable
-        elif b[1] == 1.0:
+                    count_given_p2_win[dataset[b][0][i][j]][i][j] += 1 #totally readable
+                    count[dataset[b][0][i][j]][i][j] += 1 #totally readable
+        elif dataset[b][1] == 1.0:
             num_p1_wins += 1
             for i in range(4):
                 for j in range(4):
-                    count_given_p1_win[b[0][i][j]][i][j] += 1 #totally readable
-                    count[b[0][i][j]][i][j] += 1 #totally readable
-        elif b[1] == 0.5:
+                    count_given_p1_win[dataset[b][0][i][j]][i][j] += 1 #totally readable
+                    count[dataset[b][0][i][j]][i][j] += 1 #totally readable
+        elif dataset[b][1] == 0.5:
             for i in range(4):
                 for j in range(4):
-                    count[b[0][i][j]][i][j] += 1 #totally readable i hope it works dude
+                    count[dataset[b][0][i][j]][i][j] += 1 #totally readable i hope it works dude
         else:
             print("Oh shiiiiiiiiiitttttt " + str(b[1]))#ESxCEPTIONdsds
-    Prob_p1_wins_given_value = [[[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
-                                [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
-                                [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]]
-    Prob_p2_wins_given_value = [[[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
-                                [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
-                                [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]]
-    for value in range(3):
-        for i in range(4):
-            for j in range(4):
-                Prob_p1_wins_given_value[value][i][j] = (float(count_given_p1_win[value][i][j]+1)/float(num_p1_wins+1)) * (float(num_p1_wins+1)/float(num_checked+1))\
-                                                        / (float(count[value][i][j]+1)/float(num_checked+1)) #P(x|win) * P(win) / P(x)
-    for value in range(3):
-        for i in range(4):
-            for j in range(4):
-                Prob_p2_wins_given_value[value][i][j] = (float(count_given_p2_win[value][i][j]+1)/float(num_p2_wins+1)) * (float(num_p2_wins+1)/float(num_checked+1))\
-                                                        / (float(count[value][i][j]+1)/float(num_checked+1)) #P(x|win) * P(win) / P(x)
-    return Prob_p1_wins_given_value, Prob_p2_wins_given_value
+    #Prob_p1_wins_given_value = [[[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+    #                            [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+    #                            [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]]
+    #Prob_p2_wins_given_value = [[[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+    #                            [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+    #                            [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]]
+    #print("Computing win probabilities given specific cells")
+    #for value in range(3):
+    #    for i in range(4):
+    #        for j in range(4):
+    #            Prob_p1_wins_given_value[value][i][j] = (float(count_given_p1_win[value][i][j]+1)/float(num_p1_wins+1)) * (float(num_p1_wins+1)/float(num_checked+1))\
+    #                                                    / (float(count[value][i][j]+1)/float(num_checked+1)) #P(x|win) * P(win) / P(x)
+    #for value in range(3):
+    #    for i in range(4):
+    #        for j in range(4):
+    #            Prob_p2_wins_given_value[value][i][j] = (float(count_given_p2_win[value][i][j]+1)/float(num_p2_wins+1)) * (float(num_p2_wins+1)/float(num_checked+1))\
+    #                                                    / (float(count[value][i][j]+1)/float(num_checked+1)) #P(x|win) * P(win) / P(x)
+    #return Prob_p1_wins_given_value, Prob_p2_wins_given_value
+    return num_checked, num_p1_wins, num_p2_wins, count, count_given_p1_win, count_given_p2_win
 
 def GenerateDataSet():
-    '''
-    arrr = [[1, 2, 0, 0],
-            [1, 0, 2, 0],
-            [2, 0, 0, 1],
-            [2, 0, 0, 1]]
-    arrr = [[1, 2, 2, 0],
-            [1, 1, 2, 0],
-            [0, 0, 0, 0],
-            [2, 1, 0, 0]]
-    arrr = [[2, 0, 0, 2],
-            [2, 1, 0, 1],
-            [2, 0, 0, 1],
-            [0, 0, 0, 1]]
-            1 2 0 0 1 0 2 0 2 0 0 1 2 0 0 1
-    '''
-
     global FileString, NodesExplored
     arrr = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
     B = board(arrr)
-    initsize = 6
-    for i in range(10):
+    initsize = 9
+    for i in range(100):
         print("Generating "+ str(i) +"th board with " + str(initsize) + " initial placements")
         B.GenRandomBoard(initsize)
         print("running minMax(B)")
@@ -392,28 +387,65 @@ def GenerateDataSet():
         OutputFile.write(FileString)
     return
 
+def GenDataAndStats():
+    GenerateDataSet()
+    GenerateAndSaveStats(InputParse())
+
 def GenerateAndSaveStats(dataset):
+    """
+
+    :rtype: object
+    """
     global StatsOutput
-    p1, p2 = genStats(dataset)
+    StatsOutput = open("stats.txt", 'w')
+    numchecked, p1wins, p2wins, count, count_given_p1win, count_given_p2win = genStats(dataset)
+    StatsOutput.write(str(numchecked)+" "+str(p1wins)+" "+str(p2wins)+"\n*\n")
     for value in range(3):
         for row in range(4):
-            StatsOutput.write((" ".join(list(map(str, p1[value][row]))))+"\n")
+            StatsOutput.write((" ".join(list(map(str, count[value][row]))))+"\n")
         StatsOutput.write("$\n")
     StatsOutput.write("~\n")
     for value in range(3):
         for row in range(4):
-            StatsOutput.write((" ".join(list(map(str, p1[value][row]))))+"\n")
+            StatsOutput.write((" ".join(list(map(str, count_given_p1win[value][row]))))+"\n")
         StatsOutput.write("$\n")
-    StatsOutput.write("#\n")
+    StatsOutput.write("~\n")
+    for value in range(3):
+        for row in range(4):
+            StatsOutput.write((" ".join(list(map(str, count_given_p2win[value][row]))))+"\n")
+        StatsOutput.write("$\n")
+
+def ParseStats():
+    global StatsRead
+    statstr = StatsRead.read()
+    statstr = statstr.split("\n*\n")
+    statstr[0] = statstr[0].split(" ")
+    numchecked = int(statstr[0][0])
+    p1wins = int(statstr[0][1])
+    p2wins = int(statstr[0][2])
+    statstr[1] = statstr[1].split("~\n")
+    for i in range(3):
+        statstr[1][i] = statstr[1][i].split("\n$\n")[:-1]
+        for j in range(3):
+            statstr[1][i][j] = statstr[1][i][j].split("\n")
+            for k in range(4):
+                statstr[1][i][j][k] = statstr[1][i][j][k].split(" ")
+                statstr[1][i][j][k] = list(map(int, statstr[1][i][j][k]))
+    count = statstr[1][0]
+    count_given_p1win = statstr[1][1]
+    count_given_p2win = statstr[1][2]
+    return numchecked, p1wins, p2wins, count, count_given_p1win, count_given_p2win
 
 def main():
     #GenerateDataSet()
-    global mnexp, abexp
-    GenerateAndSaveStats(InputParse())
+    #global mnexp, abexp
+    #GenerateAndSaveStats(InputParse())
+    #GenDataAndStats()
+    numchecked, p1wins, p2wins, count, count_given_p1win, count_given_p2win = ParseStats()
+    print("help me")
 
-    print("help")
     #if len(b) == 4:
-    #   for i in range(3):
+    #   for i in range(3):00
     #       tempstring = input()
     #       tempb = tempstring.split()
     #       b.extend(tempb[:])
