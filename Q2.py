@@ -2,6 +2,7 @@ import copy
 import random
 import sys
 
+StatStruct = None
 FileString = ""
 NodesExplored = 0
 OutputFile = open("boards.txt", 'a')
@@ -41,7 +42,7 @@ wins = [[[1, 1], [2, 2], [3, 3], [4, 4]],
 abexp = 0
 mnexp = 0
 
-def miniMaxAlphaBeta(B, alpha, beta, ply):
+def miniMaxAlphaBeta(B, alpha, beta, ply, mode):
     global abexp
     abexp += 1
     B._ABEval()
@@ -51,12 +52,12 @@ def miniMaxAlphaBeta(B, alpha, beta, ply):
     if ply == 0:
         return (val, B)
     if (val != -100) and (val != 100): # 1,.5, 0, -1 = leafnodes, if 7 expand
-        children = getChildren(B)
+        children = getChildren(B, mode)
         bestleaf = None
         if B.move == 1:
             res = alpha
             for c in children:
-                (cval, aleaf) = miniMaxAlphaBeta(c, res, beta, ply-1)
+                (cval, aleaf) = miniMaxAlphaBeta(c, res, beta, ply-1, mode)
                 if(cval > res):
                     res = cval
                     bestleaf = aleaf
@@ -65,14 +66,14 @@ def miniMaxAlphaBeta(B, alpha, beta, ply):
         elif B.move == 2:
             res = beta
             for c in children:
-                (cval, aleaf) = miniMaxAlphaBeta(c, alpha, res,ply-1)
+                (cval, aleaf) = miniMaxAlphaBeta(c, alpha, res, ply-1, mode)
                 if(cval < res):
                     res = cval
                     bestleaf = aleaf
                 if(res <= alpha):
                     return (res, bestleaf)
         else:
-            print("Oh the humanity")
+            print("there must be at most one more 1 than 2, and at least the same number of 1s and 2s")
         return (res, bestleaf)
     else:
         return (val, B)
@@ -82,7 +83,7 @@ def minMax(B):
     val = B._minmaxEval()
     mnexp += 1
     if val == 7: # 1,.5, 0, -1 = leafnodes, if 7 expand
-        children = getChildren(B)
+        children = getChildren(B, "shuffle")
         bestleaf = None
         if B.move == 2:
             min = 2
@@ -106,8 +107,7 @@ def minMax(B):
         stringBoardAndOutcome(B, val)
         return (val, B)
 
-def getChildren(B):
-    global p1_stats, p2_stats
+def getChildren(B, mode):
     children = []
     if B.move == 1:
         move = 2
@@ -124,24 +124,62 @@ def getChildren(B):
                 child.move = move
                 child.parent = B
                 children.append(child)
-    if(p1_stats == []):
+    if(mode == "shuffle"):
         random.shuffle(children)
+
+    elif(mode == "bayes"):
+        sortExpanded(children, B.move)
+
+    elif(mode == "vanilla"):
+        pass
     else:
-        if (B.move == 1):
-            sortExpanded(children, p1_stats)
-        else:
-            sortExpanded(children, p2_stats)
+        print("Assumming you want vanilla")
     return children
 
-def sortExpanded(children, stats):
+def sortExpanded(children, turn):
     childs = []
     for i in range(len(children)):
-        prob = calculateProbability(children[i], stats)
+        prob = calculateProbability(children[i], turn)
         childs.append([copy.deepcopy(children[i]), prob])
-    childs.sort(key=lambda x: x[1])
-    for c in childs:
-        children[i] = c[0]
+    childs.sort(reverse=True, key=lambda x: x[1])
+    for c in range(len(childs)):
+        children[c] = childs[c][0]
     return children
+
+
+def calculateProbability(child, turn):
+    board = child.b
+    global StatStruct
+    if turn == 1:
+        ProbabilityWin = StatStruct.p1wins / StatStruct.numchecked
+        ProbabilityNotWin = 1 - ProbabilityWin
+        for row in range(4):
+            for col in range(4):
+                PAgW = StatStruct.count_given_p1win[board[row][col]][row][col] / StatStruct.p1wins
+                PA = StatStruct.count[board[row][col]][row][col]/StatStruct.numchecked
+                PAgNW = (StatStruct.count[board[row][col]][row][col] -
+                         StatStruct.count_given_p1win[board[row][col]][row][col]) / (
+                        StatStruct.numchecked - StatStruct.p1wins)
+                ProbabilityWin *= PAgW/PA
+                ProbabilityNotWin *= PAgNW/PA
+    elif turn == 2:
+        ProbabilityWin = StatStruct.p2wins / StatStruct.numchecked
+        ProbabilityNotWin = 1 - ProbabilityWin
+        for row in range(4):
+            for col in range(4):
+                PAgW = StatStruct.count_given_p2win[board[row][col]][row][col] / StatStruct.p2wins
+                PA = StatStruct.count[board[row][col]][row][col]/StatStruct.numchecked
+                PAgNW = (StatStruct.count[board[row][col]][row][col] -
+                         StatStruct.count_given_p2win[board[row][col]][row][col]) / (
+                        StatStruct.numchecked - StatStruct.p2wins)
+                ProbabilityWin *= PAgW/PA
+                ProbabilityNotWin *= PAgNW/PA
+    else:
+        print("Dead")
+        return 0
+
+    Probability = ProbabilityWin/(ProbabilityWin+ProbabilityNotWin)
+    return Probability
 
 class board:
 
@@ -296,10 +334,6 @@ def NextMove(node):
     else:
         NextMove(node.parent)
 
-def calculateProbability(board, stats):
-    for value in range(3):
-        pass
-
 def InputParse():
     global DataSet
     print("Reading data file to string")
@@ -392,10 +426,7 @@ def GenDataAndStats():
     GenerateAndSaveStats(InputParse())
 
 def GenerateAndSaveStats(dataset):
-    """
 
-    :rtype: object
-    """
     global StatsOutput
     StatsOutput = open("stats.txt", 'w')
     numchecked, p1wins, p2wins, count, count_given_p1win, count_given_p2win = genStats(dataset)
@@ -434,35 +465,52 @@ def ParseStats():
     count = statstr[1][0]
     count_given_p1win = statstr[1][1]
     count_given_p2win = statstr[1][2]
-    return numchecked, p1wins, p2wins, count, count_given_p1win, count_given_p2win
+    return Stats(numchecked, p1wins, p2wins, count, count_given_p1win, count_given_p2win)
+
+class Stats:
+    def __init__(self, numchecked, p1wins, p2wins, count, count_given_p1win, count_given_p2win):
+        self.numchecked = numchecked
+        self.p1wins = p1wins
+        self.p2wins = p2wins
+        self.count = count
+        self.count_given_p1win = count_given_p1win
+        self.count_given_p2win = count_given_p2win
 
 def main():
+    global StatStruct, abexp
+    arrr = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+    B = board(arrr)
     #GenerateDataSet()
     #global mnexp, abexp
     #GenerateAndSaveStats(InputParse())
     #GenDataAndStats()
-    numchecked, p1wins, p2wins, count, count_given_p1win, count_given_p2win = ParseStats()
+    StatStruct = ParseStats()
+
+
     print("help me")
 
-    #if len(b) == 4:
-    #   for i in range(3):00
-    #       tempstring = input()
-    #       tempb = tempstring.split()
-    #       b.extend(tempb[:])
-    #for i in range(4):
-    #   for j in range(4):
-    #       arrr[i][j] = int( b[i*4 + j])
-    #thing = board(arrr)
-    #(Minmax, MMOptimal) = minMax(thing)
-    #(Alphabeta, ABOptimal) = miniMaxAlphaBeta(thing, -256, 255, 6)
-    #print("Minmax has expanded ", mnexp, " nodes.")
-    #print("Minmax returns: ", Minmax)
-    #print("Minmax Recomends next move:")
-    #NextMove(MMOptimal)
-    #print("Alphabeta has expanded ", abexp, " nodes.")
-    #print("Alphabeta returns: ", Alphabeta)
-    #print("Alphabeta Recomends next move:")
-    #NextMove(ABOptimal)
+    string = input("Please input your board below, as a 4x4 matrix of 2's, 1's, and 0's: \nInput should be of form:\n1 2 0 0\n1 0 2 0\n2 0 0 1\n2 0 0 1\n")
+    b = string.split()
+    if len(b) == 4:
+        for i in range(3):
+            tempstring = input()
+            tempb = tempstring.split()
+            b.extend(tempb[:])
+    for i in range(4):
+        for j in range(4):
+            arrr[i][j] = int( b[i*4 + j])
+    thing = board(arrr)
+    (Alphabeta, ABOptimal) = miniMaxAlphaBeta(thing, -256, 255, 6, "vanilla")
+    print("Normal Alphabeta has expanded ", abexp, " nodes.")
+    print("Normal Alphabeta returns: ", Alphabeta)
+    print("Normal Alphabeta Recomends next move:")
+    NextMove(ABOptimal)
+    abexp = 0
+    (Alphabeta, ABOptimal) = miniMaxAlphaBeta(thing, -256, 255, 6, "bayes")
+    print("Improved Alphabeta has expanded ", abexp, " nodes.")
+    print("Improved Alphabeta returns: ", Alphabeta)
+    print("Improved Alphabeta Recomends next move:")
+    NextMove(ABOptimal)
 
 if __name__ == "__main__":
     main()
