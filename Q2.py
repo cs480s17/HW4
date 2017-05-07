@@ -73,7 +73,7 @@ def miniMaxAlphaBeta(B, alpha, beta, ply, mode):
                 if(res <= alpha):
                     return (res, bestleaf)
         else:
-            print("there must be at most one more 1 than 2, and at least the same number of 1s and 2s")
+            print("there must be at most one more 1s than 2s, and at least the same number of 1s and 2s")
         return (res, bestleaf)
     else:
         return (val, B)
@@ -500,16 +500,16 @@ def main():
         for j in range(4):
             arrr[i][j] = int( b[i*4 + j])
     thing = board(arrr)
-    (Alphabeta, ABOptimal) = miniMaxAlphaBeta(thing, -256, 255, 6, "vanilla")
+    (Alphabeta, ABOptimal) = miniMaxAlphaBeta(thing, -256, 255, 16, "vanilla")
     print("Normal Alphabeta has expanded ", abexp, " nodes.")
     print("Normal Alphabeta returns: ", Alphabeta)
     print("Normal Alphabeta Recomends next move:")
     NextMove(ABOptimal)
     abexp = 0
-    (Alphabeta, ABOptimal) = miniMaxAlphaBeta(thing, -256, 255, 6, "bayes")
-    print("Improved Alphabeta has expanded ", abexp, " nodes.")
-    print("Improved Alphabeta returns: ", Alphabeta)
-    print("Improved Alphabeta Recomends next move:")
+    (Alphabeta, ABOptimal) = miniMaxAlphaBeta(thing, -256, 255, 16, "bayes")
+    print("\"Improved\" Alphabeta has expanded ", abexp, " nodes.")
+    print("\"Improved\" Alphabeta returns: ", Alphabeta)
+    print("\"Improved\" Alphabeta Recomends next move:")
     NextMove(ABOptimal)
 
 if __name__ == "__main__":
